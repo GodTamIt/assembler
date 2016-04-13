@@ -98,7 +98,6 @@ def pass2(input_file, use_hex):
             assembled = None
             try:
                 assembled = instr.hex(operands, pc) if use_hex else instr.binary(operands, pc)
-                #print(op + ' ' + str(assembled))
             except Exception as e:
                 error(line_count, str(e))
                 success = False
@@ -117,7 +116,7 @@ def separator(s):
 
 if __name__ == "__main__":
     # Parse arguments
-    parser = argparse.ArgumentParser('Assembles LC-2200 code into hex or binary.')
+    parser = argparse.ArgumentParser('Assembles generic ISA-defined assembly code into hex or binary.')
     parser.add_argument('asmfile', help='the .s file to be assembled')
     parser.add_argument('-i', '--isa', required=False, type=str, default='isa', help='define the Python ISA module to load [default: isa]')
     parser.add_argument('-v', '--verbose', action='store_true', help='enable verbose printing of assembler')
@@ -132,7 +131,6 @@ if __name__ == "__main__":
     try:
         ISA = importlib.import_module(args.isa)
     except:
-        raise
         print("Error: Failed to load ISA definition module '{}'.\n".format(args.isa))
         exit(1)
         

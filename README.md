@@ -9,9 +9,8 @@ The assembler contains multiple options.
 
 `python assembler.py -h` prints:
 ```
-usage: Assembles LC-2200 code into hex or binary. [-h] [-i ISA] [-v] [--hex]
-                                                  [-s SEPARATOR]
-                                                  asmfile
+usage: Assembles generic ISA-defined assembly code into hex or binary.
+       [-h] [-i ISA] [-v] [--hex] [-s SEPARATOR] asmfile
 
 positional arguments:
   asmfile               the .s file to be assembled
@@ -25,6 +24,7 @@ optional arguments:
                         the separator to use between instructions (accepts \s
                         for space and standard escape characters) [default:
                         \s]
+
 ```
 
 ## How to Use
