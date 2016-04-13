@@ -7,15 +7,16 @@ __author__ = "Christopher Tam"
 # Define the name of the architecture
 __name__ = 'LC-2200'
 
-# Define a 32-bit architecture 
+# Define overall architecture widths (in bits)
 BIT_WIDTH = 32
-# Define 4-bit opcodes
+# Define opcode widths (in bits)
 OPCODE_WIDTH = 4
-# Define 4-bit register specifiers
+# Define register specifier widths (in bits)
 REGISTER_WIDTH = 4
     
 ALIASES = {
-    '.word':'word'
+    '.word':'fill',
+    '.fill':'fill'
 }
     
 REGISTERS = {
@@ -400,7 +401,7 @@ class la(Instruction):
     jalr $RX, $RX       - to get current pc
     lw $RX, 2($RX)      - to load the word hardcoded_label_value
     beq $zero, $zero, 1 - to jump to the next instruction after label value
-    .word distance_to_label
+    .fill distance_to_label
     """
     
     @staticmethod
@@ -432,7 +433,7 @@ class la(Instruction):
         result = jalr.binary('{0}, {0}'.format(RX))
         result.extend(lw.binary('{0}, 2({0})'.format(RX)))
         result.extend(beq.binary('$zero, $zero, 1', pc=pc+3))
-        result.extend(word.binary(SYMBOL_TABLE[label]))
+        result.extend(fill.binary(SYMBOL_TABLE[label]))
         
         return result
         
@@ -465,7 +466,7 @@ class noop(Instruction):
         return [__bin2hex__(instr) for instr in noop.binary(operands, pc=pc)]
 
 
-class word(Instruction):
+class fill(Instruction):
     @staticmethod
     def opcode():
         return None
@@ -482,7 +483,7 @@ class word(Instruction):
         
     @staticmethod
     def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in word.binary(operands, pc=pc)]
+        return [__bin2hex__(instr) for instr in fill.binary(operands, pc=pc)]
         
         
 class halt(Instruction):
