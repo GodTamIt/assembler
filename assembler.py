@@ -53,24 +53,25 @@ def pass1(file):
                 
         if op:
             try:
-                pc += getattr(isa, op).size()
+                pc += getattr(ISA, ISA.instruction_class(op)).size()
             except:
                 error(line_count, "instruction '{}' is not defined in the current ISA".format(op))
                 no_errors = False
                 
         line_count += 1
         
-    verbose("Finished Pass 1...\n")
+    verbose("Finished Pass 1.\n")
         
     return no_errors
 
 
-def pass2(input_file, output_file, logisim, new_line):
+def pass2(input_file, logisim):
     verbose("Beginning Pass 2:\n")
 
     pc = 0
     line_count = 1
-    no_errors = True
+    success = True
+    results = []
     
     # Seek to beginning of file
     input_file.seek(0)
@@ -93,29 +94,31 @@ def pass2(input_file, output_file, logisim, new_line):
         _, op, operands = ISA.get_parts(line)
                 
         if op:
-            instr = getattr(ISA, op)
-            result = None
+            instr = getattr(ISA, ISA.instruction_class(op))
+            assembled = None
             try:
-                result = instr.hex() if logisim else instr.binary()
+                assembled = instr.hex(operands, pc) if logisim else instr.binary(operands, pc)
+                #print(op + ' ' + str(assembled))
             except Exception as e:
                 error(line_count, str(e))
-                no_errors = False
+                success = False
             
-            if result:
-                output_file.write(result)
-                output_file.write('\n' if new_line else ' ')
+            if assembled:
+                results.extend(assembled)
+                # output_file.write(separator.join(result))
+                # output_file.write(separator)
                 pc += instr.size()
             
         line_count += 1
     
-    verbose("Finished Pass 2:\n")
-    return no_errors
+    verbose("Finished Pass 2\n")
+    return (success, results)
 
 if __name__ == "__main__":
     # Parse arguments
     parser = argparse.ArgumentParser('Assembles LC-2200 code into hex or binary.')
     parser.add_argument('asmfile', help='the .s file to be assembled')
-    parser.add_argument('-i', '--isa', nargs=1, default='isa', help='define the Python ISA module to load')
+    parser.add_argument('-i', '--isa', nargs=1, default=['isa'], help='define the Python ISA module to load')
     parser.add_argument('-v', '--verbose', action='store_true', help='enable verbose printing of assembler')
     parser.add_argument('-l', '--logisim', action='store_true', help='output Logisim-compatible RAM image')
     parser.add_argument('-n', '--new-line', action='store_true',  help='use new-line character as separator')
@@ -126,7 +129,7 @@ if __name__ == "__main__":
 
     # Try to dynamically load ISA module
     try:
-        ISA = importlib.import_module(args.isa)
+        ISA = importlib.import_module(args.isa[0])
     except:
         print("Error: Failed to load ISA definition module '{}'.\n".format(args.isa))
         exit(1)
@@ -141,13 +144,18 @@ if __name__ == "__main__":
             print("Assemble failed.\n")
             exit(1)
         
-        outFileName = os.path.splitext(args.asmfile)[0]
-        outFileName += '.hex' if args.logisim else '.bin'    
+        success, results = pass2(read_file, args.logisim)
+        if not success:
+            print("Assemble failed.\n")
+            exit(1)
         
-        print("Writing to {}...".format(outFileName))
+    outFileName = os.path.splitext(args.asmfile)[0]
+    outFileName += '.hex' if args.logisim else '.bin'
+    separator = '\n' if args.new_line else ' '
         
-        with open(outFileName, 'w') as write_file:
-            if pass2(read_file, write_file, args.logisim, args.new_line):
-                print("Assemble successful.\n")
-            else:
-                print("Assemble failed.\n")
+    print("Writing to {}...".format(outFileName))
+        
+    with open(outFileName, 'w') as write_file:
+        for r in results:
+            #print(r)
+            write_file.write(r + separator)
