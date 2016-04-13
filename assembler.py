@@ -120,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument('asmfile', help='the .s file to be assembled')
     parser.add_argument('-i', '--isa', nargs=1, default=['isa'], help='define the Python ISA module to load')
     parser.add_argument('-v', '--verbose', action='store_true', help='enable verbose printing of assembler')
-    parser.add_argument('-l', '--logisim', action='store_true', help='output Logisim-compatible RAM image')
+    parser.add_argument('-l', '--logisim', '--hex', action='store_true', help='output Logisim-compatible RAM image')
     parser.add_argument('-n', '--new-line', action='store_true',  help='use new-line character as separator')
     # parser.add_argument('-o' '--opcode', nargs=1, type=int, default=4, help='the bit width of the opcodes')
     # parser.add_argument('-r' '--register', nargs=1, type=int, default=4, help='the bit width of the register identifiers')
