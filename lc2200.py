@@ -13,21 +13,10 @@ BIT_WIDTH = 32
 OPCODE_WIDTH = 4
 # Define 4-bit register specifiers
 REGISTER_WIDTH = 4
-
-VALID_OPCODES = {
-        'add':'r', 
-        'neg':'j', 
-        'addi':'i', 
-        'lw':'i', 
-        'sw':'i', 
-        'beq':'i', 
-        'jalr':'j', 
-        'spop':'s',
-        'la': 'pseudo',
-        'noop': 'pseudo',
-        '.word': 'pseudo',
-        'halt': 'pseudo'}
     
+ALIASES = {
+    '.word':'word'
+}
     
 REGISTERS = {
         '$zero' :   0,
@@ -45,26 +34,7 @@ REGISTERS = {
         '$k0'   :   12,
         '$sp'   :   13,
         '$fp'   :   14,
-        '$ra'   :   15,}
-        
-# Just an ordered list
-# REGISTERS = [
-#         '$zero',
-#         '$at',
-#         '$v0',
-#         '$a0',
-#         '$a1',
-#         '$a2',
-#         '$t0',
-#         '$t1',
-#         '$t2',
-#         '$s0',
-#         '$s1',
-#         '$s2',
-#         '$k0',
-#         '$sp',
-#         '$fp',
-#         '$ra']
+        '$ra'   :   15}
 
 
 SYMBOL_TABLE = {}
@@ -72,15 +42,20 @@ SYMBOL_TABLE = {}
 
 # Public Functions
 def is_blank(line):
+    """Return whether a line is blank and not an instruction."""
     return __RE_BLANK__.match(line) is not None
     
 def get_parts(line):
+    """Break down an instruction into 3 parts: Label, Opcode, Operand"""
     m = __RE_PARTS__.match(line)
     try:
         return m.group('Label'), m.group('Opcode'), m.group('Operands')
     except:
         return None
 
+def instruction_class(name):
+    """Translate a given instruction name to its corresponding class name."""
+    return ALIASES.get(name, name)
 
 # Private Variables
 __OFFSET_SIZE__ = BIT_WIDTH - OPCODE_WIDTH - (REGISTER_WIDTH * 2)
@@ -92,6 +67,8 @@ __RE_HEX__ = re.compile(r'0x[A-z0-9]*')
 __RE_R__ = re.compile(r'^\s*(?P<RX>\$\w+?)\s*,\s*(?P<RY>\$\w+?)\s*,\s*(?P<RZ>\$\w+?)\s*$')
 __RE_J__ = re.compile(r'^\s*(?P<RX>\$\w+?)\s*,\s*(?P<RY>\$\w+?)\s*$')
 __RE_I__ = re.compile(r'^\s*(?P<RX>\$\w+?)\s*,\s*(?P<RY>\$\w+?)\s*,\s*(?P<Offset>\S+?)\s*$')
+__RE_MEM__ = re.compile(r'^\s*(?P<RX>\$\w+?)\s*,\s*(?P<Offset>\S+?)\s*\((?P<RY>\$\w+?)\)\s*$')
+__RE_LA__ = re.compile(r'^\s*(?P<RX>\$\w+?)\s*,\s*(?P<Label>\w+?)\s*$')
 
 # Private Functions
 def __zero_extend__(binary, target, pad_right=False):
@@ -120,7 +97,7 @@ def __dec2bin__(num, bits):
     """Compute the 2's complement binary of an int value."""
     return format(num if num >= 0 else (1 << bits) + num, '0{}b'.format(bits))
 
-def __parse_offset__(offset, pc=None):
+def __parse_value__(offset, size, pc=None):
     bin_offset = None
     
     if type(offset) is str:
@@ -130,34 +107,37 @@ def __parse_offset__(offset, pc=None):
             try:
                 bin_offset = __hex2bin__(offset)
             except:
-                raise RuntimeError("Offset '{}' is not in a valid hexadecimal format.".format(offset))
+                raise RuntimeError("'{}' is not in a valid hexadecimal format.".format(offset))
                 
-            if len(bin_offset) > __OFFSET_SIZE__:
-                raise RuntimeError("Offset '{}' is too large for {}.".format(offset, __name__))
+            if len(bin_offset) > size:
+                raise RuntimeError("'{}' is too large for {}.".format(offset, __name__))
                 
-            bin_offset = __zero_extend__(bin_offset, __OFFSET_SIZE__)
+            bin_offset = __zero_extend__(bin_offset, size)
         elif offset.startswith('0b'):
             try:
                 bin_offset = bin(int(offset))
             except:
-                raise RuntimeError("Offset '{}' is not in a valid binary format.".format(offset))
+                raise RuntimeError("'{}' is not in a valid binary format.".format(offset))
                 
-            if len(bin_offset) > __OFFSET_SIZE__:
-                raise RuntimeError("Offset '{}' is too large for {}.".format(offset, __name__))
+            if len(bin_offset) > size:
+                raise RuntimeError("'{}' is too large for {}.".format(offset, __name__))
                 
-            bin_offset = __zero_extend__(bin_offset, __OFFSET_SIZE__)
+            bin_offset = __zero_extend__(bin_offset, size)
             
     if bin_offset is None:
         try:
             offset = int(offset)
         except:
-            raise RuntimeError("Offset '{}' is not in a decimal valid format.".format(offset))
+            if pc is not None:
+                raise RuntimeError("'{}' cannot be resolved as a label or a value.".format(offset))
+            else:
+                raise RuntimeError("'{}' cannot be resolved as a value.".format(offset))
             
-        bound = 2**(__OFFSET_SIZE__ - 1)
+        bound = 2**(size - 1)
         if offset < -bound or offset >= bound:
-            raise RuntimeError("Offset '{}' is too large for {}.".format(offset, __name__))
+            raise RuntimeError("'{}' is too large (values) or too far away (labels) for {}.".format(offset, __name__))
         
-        bin_offset = __dec2bin__(offset, __OFFSET_SIZE__)
+        bin_offset = __dec2bin__(offset, size)
     
     return bin_offset
 
@@ -178,11 +158,11 @@ def __parse_r__(operands):
             
     return ''.join(result_list)
 
-def __parse_i__(operands, is_mem, pc=None):
+def __parse_i__(operands, is_mem=False, pc=None):
     # Define result
     result_list = []
     
-    match = __RE_I__.match(operands)
+    match = __RE_MEM__.match(operands) if is_mem else __RE_I__.match(operands)
     
     if match is None:
         raise RuntimeError("Operands '{}' are in an incorrect format.".format(operands.strip()))
@@ -193,7 +173,7 @@ def __parse_i__(operands, is_mem, pc=None):
         else:
             raise RuntimeError("Register identifier '{}' is not valid in {}.".format(op, __name__))
             
-    result_list.append(__parse_offset__(match.group('Offset'), pc))
+    result_list.append(__parse_value__(match.group('Offset'), __OFFSET_SIZE__, pc))
     
     return ''.join(result_list)
 
@@ -230,22 +210,24 @@ class Instruction:
         raise NotImplementedError()
         
     @staticmethod
-    def binary(operands):
+    def binary(operands, pc=None):
         """Assemble the instruction into binary form.
         
         Keyword arguments:
         operands -- a string representation of the operands of the instruction.
+        pc -- the current program counter. Only needs to be set for PC-relative instructions.
         
         Returns an iterable representation of the binary instruction(s).
         """
         raise NotImplementedError()
         
     @staticmethod
-    def hex(operands):
+    def hex(operands, pc=None):
         """Assemble the instruction into hexadecimal form.
         
         Keyword arguments:
         operands -- a string representation of the operands of the instruction.
+        pc -- the current program counter. Only needs to be set for PC-relative instructions.
         
         Returns an iterable representation of the hexadecimal instruction(s).
         """
@@ -262,14 +244,14 @@ class add(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands):
+    def binary(operands, pc=None):
         opcode = __zero_extend__(bin(add.opcode()), OPCODE_WIDTH)
         operands = __parse_r__(operands)
-        return __zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)
+        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
         
     @staticmethod
-    def hex(operands):
-        return [__bin2hex__(neg.binary(operands))]
+    def hex(operands, pc=None):
+        return [__bin2hex__(instr) for instr in add.binary(operands, pc=pc)]
 
 class neg(Instruction):
     @staticmethod
@@ -281,14 +263,14 @@ class neg(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands):
+    def binary(operands, pc=None):
         opcode = __zero_extend__(bin(neg.opcode()), OPCODE_WIDTH)
         operands = __parse_j__(operands)
         return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
         
     @staticmethod
-    def hex(operands):
-        return [__bin2hex__(neg.binary(operands))]
+    def hex(operands, pc=None):
+        return [__bin2hex__(instr) for instr in neg.binary(operands, pc=pc)]
 
 
 class addi(Instruction):
@@ -301,14 +283,14 @@ class addi(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands):
+    def binary(operands, pc=None):
         opcode = __zero_extend__(bin(addi.opcode()), OPCODE_WIDTH)
         operands = __parse_i__(operands)
         return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
         
     @staticmethod
-    def hex(operands):
-        return [__bin2hex__(addi.binary(operands))]
+    def hex(operands, pc=None):
+        return [__bin2hex__(instr) for instr in addi.binary(operands, pc=pc)]
         
 
 class lw(Instruction):
@@ -321,25 +303,201 @@ class lw(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands):
-        opcode = __zero_extend__(bin(addi.opcode()), OPCODE_WIDTH)
-        operands = __parse_i__(operands)
-        return __zero_extend__(opcode + operands, BIT_WIDTH, True)
+    def binary(operands, pc=None):
+        opcode = __zero_extend__(bin(lw.opcode()), OPCODE_WIDTH)
+        operands = __parse_i__(operands, is_mem=True)
+        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
         
     @staticmethod
-    def hex(operands):
-        return __bin2hex__(addi.binary(operands))
+    def hex(operands, pc=None):
+        return [__bin2hex__(instr) for instr in lw.binary(operands, pc=pc)]
+        
+
+class sw(Instruction):
+    @staticmethod
+    def opcode():
+        return 4
+        
+    @staticmethod
+    def size():
+        return 1
+        
+    @staticmethod
+    def binary(operands, pc=None):
+        opcode = __zero_extend__(bin(sw.opcode()), OPCODE_WIDTH)
+        operands = __parse_i__(operands, is_mem=True)
+        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
+        
+    @staticmethod
+    def hex(operands, pc=None):
+        return [__bin2hex__(instr) for instr in sw.binary(operands, pc=pc)]
+
+class beq(Instruction):
+    @staticmethod
+    def opcode():
+        return 5
+        
+    @staticmethod
+    def size():
+        return 1
+        
+    @staticmethod
+    def binary(operands, pc=None):
+        assert(pc is not None)  # Sanity check
+    
+        opcode = __zero_extend__(bin(beq.opcode()), OPCODE_WIDTH)
+        operands = __parse_i__(operands, pc=pc)
+        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
+        
+    @staticmethod
+    def hex(operands, pc=None):
+        return [__bin2hex__(instr) for instr in beq.binary(operands, pc=pc)]
 
 
-# BINARY_OPCODES = {'add':'000',
-#         'neg':'001',
-#         'addi':'010',
-#         'lw':'011',
-#         'sw':'100',
-#         'beq':'101',
-#         'jalr':'110',
-#         'spop':'111'}
-# BINARY_REGISTERS = {'zero':'0000', 'at':'0001', 'v0':'0010', 'a0':'0011', 
-#         'a1':'0100', 'a2':'0101', 't0':'0110', 't1':'0111', 
-#         't2':'1000', 's0':'1001', 's1':'1010', 's2':'1011',
-#         'k0':'1100', 'sp':'1101', 'fp':'1110', 'ra':'1111'}
+class jalr(Instruction):
+    @staticmethod
+    def opcode():
+        return 6
+        
+    @staticmethod
+    def size():
+        return 1
+        
+    @staticmethod
+    def binary(operands, pc=None):
+        opcode = __zero_extend__(bin(jalr.opcode()), OPCODE_WIDTH)
+        operands = __parse_j__(operands)
+        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
+        
+    @staticmethod
+    def hex(operands, pc=None):
+        return [__bin2hex__(instr) for instr in jalr.binary(operands, pc=pc)]
+
+
+class spop(Instruction):
+    @staticmethod
+    def opcode():
+        return 7
+        
+    @staticmethod
+    def size():
+        return 1
+        
+    @staticmethod
+    def binary(operands, pc=None):
+        opcode = __zero_extend__(bin(spop.opcode()), OPCODE_WIDTH)
+        return [__zero_extend__(opcode, BIT_WIDTH, pad_right=True)]
+        
+    @staticmethod
+    def hex(operands, pc=None):
+        return [__bin2hex__(instr) for instr in beq.binary(operands, pc=pc)]
+        
+
+class la(Instruction):
+    """la $RX, label
+    
+    Equivalent to:
+    jalr $RX, $RX       - to get current pc
+    lw $RX, 2($RX)      - to load the word hardcoded_label_value
+    beq $zero, $zero, 1 - to jump to the next instruction after label value
+    .word distance_to_label
+    """
+    
+    @staticmethod
+    def opcode():
+        return None
+        
+    @staticmethod
+    def size():
+        return 4
+        
+    @staticmethod
+    def binary(operands, pc=None):
+        assert(pc is not None)  # Sanity check
+        
+        result_list = []
+        
+        match = __RE_LA__.match(operands)
+        if match is None:
+            raise RuntimeError("Operands '{}' are in an incorrect format.".format(operands.strip()))
+        
+        RX = match.group('RX')
+        label = match.group('Label')
+        
+        if RX == '$zero':
+            raise RuntimeError("'la' instruction cannot be used with '$zero' register.")
+        elif label not in SYMBOL_TABLE:
+            raise RuntimeError("Label '{}' cannot be resolved.".format(label))
+        
+        result = jalr.binary('{0}, {0}'.format(RX))
+        result.extend(lw.binary('{0}, 2({0})'.format(RX)))
+        result.extend(beq.binary('$zero, $zero, 1', pc=pc+3))
+        result.extend(word.binary(SYMBOL_TABLE[label]))
+        
+        return result
+        
+    @staticmethod
+    def hex(operands, pc=None):
+        return [__bin2hex__(instr) for instr in la.binary(operands, pc=pc)]
+
+
+class noop(Instruction):
+    """noop
+    
+    Equivalent to:
+    add $zero, $zero, $zero
+    """
+
+    @staticmethod
+    def opcode():
+        return None
+        
+    @staticmethod
+    def size():
+        return 1
+        
+    @staticmethod
+    def binary(operands, pc=None):
+        return add.binary('$zero, $zero', pc=pc)
+        
+    @staticmethod
+    def hex(operands, pc=None):
+        return [__bin2hex__(instr) for instr in noop.binary(operands, pc=pc)]
+
+
+class word(Instruction):
+    @staticmethod
+    def opcode():
+        return None
+        
+    @staticmethod
+    def size():
+        return 1
+        
+    @staticmethod
+    def binary(operands, pc=None):
+        if type(operands) is str:
+            operands = operands.strip()
+        return [__parse_value__(operands, BIT_WIDTH)]
+        
+    @staticmethod
+    def hex(operands, pc=None):
+        return [__bin2hex__(instr) for instr in word.binary(operands, pc=pc)]
+        
+        
+class halt(Instruction):
+    @staticmethod
+    def opcode():
+        return None
+        
+    @staticmethod
+    def size():
+        return 1
+        
+    @staticmethod
+    def binary(operands, pc=None):
+        return spop.binary(operands, pc=pc)
+        
+    @staticmethod
+    def hex(operands, pc=None):
+        return [__bin2hex__(instr) for instr in halt.binary(operands, pc=pc)]
