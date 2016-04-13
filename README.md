@@ -9,7 +9,8 @@ The assembler contains multiple options.
 
 `python assembler.py -h` prints:
 ```
-usage: Assembles LC-2200 code into hex or binary. [-h] [-i ISA] [-v] [-l] [-n]
+usage: Assembles LC-2200 code into hex or binary. [-h] [-i ISA] [-v] [--hex]
+                                                  [-s SEPARATOR]
                                                   asmfile
 
 positional arguments:
@@ -17,10 +18,13 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -i ISA, --isa ISA     define the Python ISA module to load
+  -i ISA, --isa ISA     define the Python ISA module to load [default: isa]
   -v, --verbose         enable verbose printing of assembler
-  -l, --logisim, --hex  output Logisim-compatible RAM image
-  -n, --new-line        use new-line character as separator
+  --hex, --logisim      assemble code into hexadecimal (Logisim-compatible)
+  -s SEPARATOR, --separator SEPARATOR
+                        the separator to use between instructions (accepts \s
+                        for space and standard escape characters) [default:
+                        \s]
 ```
 
 ## How to Use
@@ -34,7 +38,12 @@ Example usage with the `lc2200.py` definition:
 python assembly.s -i lc2200
 ```
 
-To output with *Logisim* compatibility (hex):
+To output assembled code in hexadecimal (compatible with *Logisim* images):
 ```
 python assembly.s -i lc2200 --logisim
+```
+
+To separate entries by new line:
+```
+python assembly.s -i lc2200 --separator \n
 ```

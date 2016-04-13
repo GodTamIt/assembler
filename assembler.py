@@ -65,7 +65,7 @@ def pass1(file):
     return no_errors
 
 
-def pass2(input_file, logisim):
+def pass2(input_file, use_hex):
     verbose("Beginning Pass 2:\n")
 
     pc = 0
@@ -97,7 +97,7 @@ def pass2(input_file, logisim):
             instr = getattr(ISA, ISA.instruction_class(op))
             assembled = None
             try:
-                assembled = instr.hex(operands, pc) if logisim else instr.binary(operands, pc)
+                assembled = instr.hex(operands, pc) if use_hex else instr.binary(operands, pc)
                 #print(op + ' ' + str(assembled))
             except Exception as e:
                 error(line_count, str(e))
@@ -105,8 +105,6 @@ def pass2(input_file, logisim):
             
             if assembled:
                 results.extend(assembled)
-                # output_file.write(separator.join(result))
-                # output_file.write(separator)
                 pc += instr.size()
             
         line_count += 1
@@ -114,23 +112,27 @@ def pass2(input_file, logisim):
     verbose("Finished Pass 2\n")
     return (success, results)
 
+def separator(s):
+    return s.replace('\s', ' ').encode().decode('unicode_escape')
+
 if __name__ == "__main__":
     # Parse arguments
     parser = argparse.ArgumentParser('Assembles LC-2200 code into hex or binary.')
     parser.add_argument('asmfile', help='the .s file to be assembled')
-    parser.add_argument('-i', '--isa', nargs=1, default=['isa'], help='define the Python ISA module to load')
+    parser.add_argument('-i', '--isa', required=False, type=str, default='isa', help='define the Python ISA module to load [default: isa]')
     parser.add_argument('-v', '--verbose', action='store_true', help='enable verbose printing of assembler')
-    parser.add_argument('-l', '--logisim', '--hex', action='store_true', help='output Logisim-compatible RAM image')
-    parser.add_argument('-n', '--new-line', action='store_true',  help='use new-line character as separator')
+    parser.add_argument('--hex', '--logisim', action='store_true', help='assemble code into hexadecimal (Logisim-compatible)')
+    parser.add_argument('-s', '--separator', required=False, type=separator, default=' ', help='the separator to use between instructions (accepts \s for space and standard escape characters) [default: \s]')
     # parser.add_argument('-o' '--opcode', nargs=1, type=int, default=4, help='the bit width of the opcodes')
     # parser.add_argument('-r' '--register', nargs=1, type=int, default=4, help='the bit width of the register identifiers')
-    # parser.add_argument('-b' '--bits', nargs=1, type=int, default=32, help='the bit width of the LC-2200 processor to assemble for')
+    # parser.add_argument('-b' '--bits', nargs=1, type=int, default=32, help='the bit width of the architecture to assemble for')
     args = parser.parse_args()
-
+    
     # Try to dynamically load ISA module
     try:
-        ISA = importlib.import_module(args.isa[0])
+        ISA = importlib.import_module(args.isa)
     except:
+        raise
         print("Error: Failed to load ISA definition module '{}'.\n".format(args.isa))
         exit(1)
         
@@ -144,18 +146,18 @@ if __name__ == "__main__":
             print("Assemble failed.\n")
             exit(1)
         
-        success, results = pass2(read_file, args.logisim)
+        success, results = pass2(read_file, args.hex)
         if not success:
             print("Assemble failed.\n")
             exit(1)
         
     outFileName = os.path.splitext(args.asmfile)[0]
-    outFileName += '.hex' if args.logisim else '.bin'
-    separator = '\n' if args.new_line else ' '
+    outFileName += '.hex' if args.hex else '.bin'
+    sep = args.separator
         
     print("Writing to {}...".format(outFileName))
         
     with open(outFileName, 'w') as write_file:
         for r in results:
             #print(r)
-            write_file.write(r + separator)
+            write_file.write(r + sep)
