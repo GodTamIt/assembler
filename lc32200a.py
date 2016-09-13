@@ -385,6 +385,7 @@ class br(Instruction):
 
         if instr == 'br':
             instr == 'brnzp'
+        instr = instr[2:]
 
         result = []
 
