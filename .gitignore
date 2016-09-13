@@ -6,8 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
-# Assembly extensions
-*.s
+# Assembler output files
+*.hex
+*.bin
 
 # Distribution / packaging
 .Python
