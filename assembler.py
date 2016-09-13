@@ -97,7 +97,10 @@ def pass2(input_file, use_hex):
             instr = getattr(ISA, ISA.instruction_class(op))
             assembled = None
             try:
-                assembled = instr.hex(operands, pc) if use_hex else instr.binary(operands, pc)
+                if use_hex:
+                    assembled = instr.hex(operands, pc=pc, instruction=op)
+                else:
+                    assembled = instr.binary(operands, pc=pc, instruction=op)
             except Exception as e:
                 error(line_count, str(e))
                 success = False

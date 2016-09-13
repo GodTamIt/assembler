@@ -211,24 +211,24 @@ class Instruction:
         raise NotImplementedError()
         
     @staticmethod
-    def binary(operands, pc=None):
+    def binary(operands, **kwargs):
         """Assemble the instruction into binary form.
         
         Keyword arguments:
         operands -- a string representation of the operands of the instruction.
-        pc -- the current program counter. Only needs to be set for PC-relative instructions.
+        **kwargs -- additional necessary arguments for the instruction.
         
         Returns an iterable representation of the binary instruction(s).
         """
         raise NotImplementedError()
         
     @staticmethod
-    def hex(operands, pc=None):
+    def hex(operands, **kwargs):
         """Assemble the instruction into hexadecimal form.
         
         Keyword arguments:
         operands -- a string representation of the operands of the instruction.
-        pc -- the current program counter. Only needs to be set for PC-relative instructions.
+        **kwargs -- additional necessary arguments for the instruction.
         
         Returns an iterable representation of the hexadecimal instruction(s).
         """
@@ -245,14 +245,14 @@ class add(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands, pc=None):
+    def binary(operands, **kwargs):
         opcode = __zero_extend__(bin(add.opcode()), OPCODE_WIDTH)
         operands = __parse_r__(operands)
         return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
         
     @staticmethod
-    def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in add.binary(operands, pc=pc)]
+    def hex(operands, **kwargs):
+        return [__bin2hex__(instr) for instr in add.binary(operands, **kwargs)]
 
 class neg(Instruction):
     @staticmethod
@@ -264,14 +264,14 @@ class neg(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands, pc=None):
+    def binary(operands, **kwargs):
         opcode = __zero_extend__(bin(neg.opcode()), OPCODE_WIDTH)
         operands = __parse_j__(operands)
         return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
         
     @staticmethod
-    def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in neg.binary(operands, pc=pc)]
+    def hex(operands, **kwargs):
+        return [__bin2hex__(instr) for instr in neg.binary(operands, **kwargs)]
 
 
 class addi(Instruction):
@@ -284,14 +284,14 @@ class addi(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands, pc=None):
+    def binary(operands, **kwargs):
         opcode = __zero_extend__(bin(addi.opcode()), OPCODE_WIDTH)
         operands = __parse_i__(operands)
         return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
         
     @staticmethod
-    def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in addi.binary(operands, pc=pc)]
+    def hex(operands, **kwargs):
+        return [__bin2hex__(instr) for instr in addi.binary(operands, **kwargs)]
         
 
 class lw(Instruction):
@@ -304,14 +304,14 @@ class lw(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands, pc=None):
+    def binary(operands, **kwargs):
         opcode = __zero_extend__(bin(lw.opcode()), OPCODE_WIDTH)
         operands = __parse_i__(operands, is_mem=True)
         return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
         
     @staticmethod
-    def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in lw.binary(operands, pc=pc)]
+    def hex(operands, **kwargs):
+        return [__bin2hex__(instr) for instr in lw.binary(operands, **kwargs)]
         
 
 class sw(Instruction):
@@ -324,14 +324,14 @@ class sw(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands, pc=None):
+    def binary(operands, **kwargs):
         opcode = __zero_extend__(bin(sw.opcode()), OPCODE_WIDTH)
         operands = __parse_i__(operands, is_mem=True)
         return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
         
     @staticmethod
-    def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in sw.binary(operands, pc=pc)]
+    def hex(operands, **kwargs):
+        return [__bin2hex__(instr) for instr in sw.binary(operands, **kwargs)]
 
 class beq(Instruction):
     @staticmethod
@@ -343,16 +343,16 @@ class beq(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands, pc=None):
-        assert(pc is not None)  # Sanity check
+    def binary(operands, **kwargs):
+        assert('pc' in kwargs)  # Sanity check
     
         opcode = __zero_extend__(bin(beq.opcode()), OPCODE_WIDTH)
-        operands = __parse_i__(operands, pc=pc)
+        operands = __parse_i__(operands, kwargs['pc'])
         return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
         
     @staticmethod
-    def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in beq.binary(operands, pc=pc)]
+    def hex(operands, **kwargs):
+        return [__bin2hex__(instr) for instr in beq.binary(operands, **kwargs)]
 
 
 class jalr(Instruction):
@@ -365,14 +365,14 @@ class jalr(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands, pc=None):
+    def binary(operands, **kwargs):
         opcode = __zero_extend__(bin(jalr.opcode()), OPCODE_WIDTH)
         operands = __parse_j__(operands)
         return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
         
     @staticmethod
-    def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in jalr.binary(operands, pc=pc)]
+    def hex(operands, **kwargs):
+        return [__bin2hex__(instr) for instr in jalr.binary(operands, **kwargs)]
 
 
 class spop(Instruction):
@@ -385,13 +385,13 @@ class spop(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands, pc=None):
+    def binary(operands, **kwargs):
         opcode = __zero_extend__(bin(spop.opcode()), OPCODE_WIDTH)
         return [__zero_extend__(opcode, BIT_WIDTH, pad_right=True)]
         
     @staticmethod
-    def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in spop.binary(operands, pc=pc)]
+    def hex(operands, **kwargs):
+        return [__bin2hex__(instr) for instr in spop.binary(operands, **kwargs)]
         
 
 class la(Instruction):
@@ -413,10 +413,10 @@ class la(Instruction):
         return 4
         
     @staticmethod
-    def binary(operands, pc=None):
-        assert(pc is not None)  # Sanity check
-        
-        result_list = []
+    def binary(operands, **kwargs):
+        assert('pc' in kwargs)  # Sanity check
+
+        pc = kwargs['pc']
         
         match = __RE_LA__.match(operands)
         if match is None:
@@ -438,8 +438,8 @@ class la(Instruction):
         return result
         
     @staticmethod
-    def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in la.binary(operands, pc=pc)]
+    def hex(operands, **kwargs):
+        return [__bin2hex__(instr) for instr in la.binary(operands, **kwargs)]
 
 
 class noop(Instruction):
@@ -458,12 +458,12 @@ class noop(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands, pc=None):
-        return add.binary('$zero, $zero', pc=pc)
+    def binary(operands, **kwargs):
+        return add.binary('$zero, $zero, $zero')
         
     @staticmethod
-    def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in noop.binary(operands, pc=pc)]
+    def hex(operands, **kwargs):
+        return [__bin2hex__(instr) for instr in noop.binary(operands, **kwargs)]
 
 
 class fill(Instruction):
@@ -476,14 +476,14 @@ class fill(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands, pc=None):
+    def binary(operands, **kwargs):
         if type(operands) is str:
             operands = operands.strip()
         return [__parse_value__(operands, BIT_WIDTH)]
         
     @staticmethod
-    def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in fill.binary(operands, pc=pc)]
+    def hex(operands, **kwargs):
+        return [__bin2hex__(instr) for instr in fill.binary(operands, **kwargs)]
         
         
 class halt(Instruction):
@@ -496,9 +496,9 @@ class halt(Instruction):
         return 1
         
     @staticmethod
-    def binary(operands, pc=None):
-        return spop.binary(operands, pc=pc)
+    def binary(operands, **kwargs):
+        return spop.binary(operands, **kwargs)
         
     @staticmethod
-    def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in halt.binary(operands, pc=pc)]
+    def hex(operands, **kwargs):
+        return [__bin2hex__(instr) for instr in halt.binary(operands, **kwargs)]
