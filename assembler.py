@@ -1,3 +1,4 @@
+from __future__ import print_function
 import argparse
 import os
 import importlib
@@ -18,7 +19,7 @@ def error(line_number, message):
     print("Error {}:{}: {}.\n".format(FILE_NAME, line_number, message))
 
 def pass1(file):
-    verbose("Beginning Pass 1...\n")
+    verbose("\nBeginning Pass 1...\n")
     # use a program counter to keep track of addresses in the file
     pc = 0
     line_count = 1
@@ -60,13 +61,13 @@ def pass1(file):
                 
         line_count += 1
         
-    verbose("Finished Pass 1.\n")
+    verbose("\nFinished Pass 1.\n")
         
     return no_errors
 
 
 def pass2(input_file, use_hex):
-    verbose("Beginning Pass 2:\n")
+    verbose("\nBeginning Pass 2...\n")
 
     pc = 0
     line_count = 1
@@ -111,7 +112,7 @@ def pass2(input_file, use_hex):
             
         line_count += 1
     
-    verbose("Finished Pass 2\n")
+    verbose("\nFinished Pass 2.\n")
     return (success, results)
 
 def separator(s):
@@ -156,9 +157,10 @@ if __name__ == "__main__":
     outFileName += '.hex' if args.hex else '.bin'
     sep = args.separator
         
-    print("Writing to {}...".format(outFileName))
+    print("Writing to {}...".format(outFileName), end="")
         
     with open(outFileName, 'w') as write_file:
         for r in results:
-            #print(r)
             write_file.write(r + sep)
+
+    print('done!')
