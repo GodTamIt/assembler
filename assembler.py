@@ -133,8 +133,8 @@ if __name__ == "__main__":
     # Try to dynamically load ISA module
     try:
         ISA = importlib.import_module(args.isa)
-    except:
-        print("Error: Failed to load ISA definition module '{}'.\n".format(args.isa))
+    except Exception as e:
+        print("Error: Failed to load ISA definition module '{}'. {}.\n".format(args.isa, str(e)))
         exit(1)
         
     print("Assembling for {} architecture...".format(ISA.__name__))
