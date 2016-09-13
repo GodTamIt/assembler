@@ -363,7 +363,7 @@ class nand(Instruction):
         
     @staticmethod
     def hex(operands, **kwargs):
-        return [__bin2hex__(instr) for instr in nand.binary(operands, args)]
+        return [__bin2hex__(instr) for instr in nand.binary(operands, **kwargs)]
 
 
 class br(Instruction):
