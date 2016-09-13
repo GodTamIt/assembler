@@ -30,20 +30,20 @@ optional arguments:
 ## How to Use
 Typical usage:
 ```
-python <assembly_file> -i <isa_definition>
+python assembler.py <assembly_file> -i <isa_definition>
 ```
 
 Example usage with the `lc2200.py` definition:
 ```
-python assembly.s -i lc2200
+python assembler.py assembly.s -i lc2200
 ```
 
 To output assembled code in hexadecimal (compatible with *Logisim* images):
 ```
-python assembly.s -i lc2200 --logisim
+python assembler.py assembly.s -i lc2200 --logisim
 ```
 
 To separate entries by new line:
 ```
-python assembly.s -i lc2200 --separator \n
+python assembler.py assembly.s -i lc2200 --separator \n
 ```
