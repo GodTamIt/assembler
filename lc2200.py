@@ -391,7 +391,7 @@ class spop(Instruction):
         
     @staticmethod
     def hex(operands, pc=None):
-        return [__bin2hex__(instr) for instr in beq.binary(operands, pc=pc)]
+        return [__bin2hex__(instr) for instr in spop.binary(operands, pc=pc)]
         
 
 class la(Instruction):
