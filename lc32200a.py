@@ -87,7 +87,7 @@ __RE_BLANK__ = re.compile(r'^\s*(!.*)?$')
 __RE_PARTS__ = re.compile(r'^\s*((?P<Label>\w+):)?\s*((?P<Opcode>\.?[\w]+)(?P<Operands>[^!]*))?(!.*)?')
 __RE_HEX__ = re.compile(r'0x[A-z0-9]*')
 __RE_R__ = re.compile(r'^\s*(?P<RX>\$\w+?)\s*,\s*(?P<RY>\$\w+?)\s*,\s*(?P<RZ>\$\w+?)\s*$')
-__RE_J__ = re.compile(r'^\s*(?P<RX>\$\w+?)\s*,\s*(?P<RY>\$\w+?)\s*$')
+__RE_JALR__ = re.compile(r'^\s*(?P<AT>\$\w+?)\s*,\s*(?P<RA>\$\w+?)\s*$')
 __RE_I__ = re.compile(r'^\s*(?P<RX>\$\w+?)\s*,\s*(?P<RY>\$\w+?)\s*,\s*(?P<Offset>\S+?)\s*$')
 __RE_OFF__ = re.compile(r'^\s*(?P<RX>\$\w+?)\s*,\s*(?P<Offset>\S+?)\s*\((?P<RY>\$\w+?)\)\s*$')
 __RE_LEA__ = re.compile(r'^\s*(?P<RX>\$\w+?)\s*,\s*(?P<Offset>\S+?)\s*$')
@@ -203,16 +203,16 @@ def __parse_i__(operands, is_offset=False, pc=None):
     
     return ''.join(result_list)
 
-def __parse_j__(operands):
+def __parse_jalr__(operands):
     # Define result
     result_list = []
     
-    match = __RE_J__.match(operands)
+    match = __RE_JALR__.match(operands)
     
     if match is None:
         raise RuntimeError("Operands '{}' are in an incorrect format.".format(operands.strip()))
     
-    for op in (match.group('RX'), match.group('RY')):
+    for op in (match.group('RA'), match.group('AT')):
         if op in REGISTERS:
             result_list.append(__zero_extend__(bin(REGISTERS[op]), REGISTER_WIDTH))
         else:
@@ -414,7 +414,7 @@ class jalr(Instruction):
     @staticmethod
     def binary(operands, **kwargs):
         opcode = __zero_extend__(bin(jalr.opcode()), OPCODE_WIDTH)
-        operands = __parse_j__(operands)
+        operands = __parse_jalr__(operands)
         return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)]
         
     @staticmethod
