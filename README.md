@@ -2,7 +2,7 @@
 A general 2-pass assembler with implementations of LC-2200 and LC3-2200a.
 
 ## Requirements
-The assembler runs on any version of Python 2.6+.  A instruction set architecture definition file is required along with the assembler.  In this repository, several sample ISA definitions have been provided (see below).
+The assembler runs on any version of Python 2.6+.  An instruction set architecture definition file is required along with the assembler.  In this repository, several sample ISA definitions have been provided (see below).
 
 ## Sample Definitions
 * [LC-2200 (32-bit)](lc2200.py)
