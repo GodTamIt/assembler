@@ -384,7 +384,7 @@ class br(Instruction):
         instr = kwargs['instruction']
 
         if instr == 'br':
-            instr == 'brnzp'
+            instr = 'brnzp'
         instr = instr[2:]
 
         result = []
