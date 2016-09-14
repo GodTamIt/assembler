@@ -3,7 +3,7 @@ import argparse
 import os
 import importlib
 
-"""lc2200-as.py: Assembles LC-2200 code into hex or binary."""
+"""assembler.py: General, modular 2-pass assembler accepting ISA definitions to assemble code."""
 __author__ = "Christopher Tam"
 
 
