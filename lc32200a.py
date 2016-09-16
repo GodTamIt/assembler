@@ -548,16 +548,38 @@ class noop(Instruction):
         
     @staticmethod
     def size():
-        return 1
+        return add.size()
         
     @staticmethod
     def binary(operands, **kwargs):
-        return add.binary('$zero, $zero, $zero')
+        return add.binary('$zero, $zero, $zero', **kwargs)
         
     @staticmethod
     def hex(operands, **kwargs):
         return [__bin2hex__(instr) for instr in noop.binary(operands, **kwargs)]
 
+class ret(Instruction):
+    """ret
+    
+    Equivalent to:
+    jalr $ra, $zero
+    """
+
+    @staticmethod
+    def opcode():
+        return None
+        
+    @staticmethod
+    def size():
+        return jalr.size()
+        
+    @staticmethod
+    def binary(operands, **kwargs):
+        return jalr.binary('$ra, $zero', **kwargs)
+        
+    @staticmethod
+    def hex(operands, **kwargs):
+        return [__bin2hex__(instr) for instr in ret.binary(operands, **kwargs)]
 
 class fill(Instruction):
     @staticmethod
