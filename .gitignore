@@ -9,6 +9,7 @@ __pycache__/
 # Assembler output files
 *.hex
 *.bin
+*.sym
 
 # Distribution / packaging
 .Python

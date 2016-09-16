@@ -2,6 +2,7 @@ from __future__ import print_function
 import argparse
 import os
 import importlib
+import operator
 
 """assembler.py: General, modular 2-pass assembler accepting ISA definitions to assemble code."""
 __author__ = "Christopher Tam"
@@ -125,7 +126,8 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--isa', required=False, type=str, default='isa', help='define the Python ISA module to load [default: isa]')
     parser.add_argument('-v', '--verbose', action='store_true', help='enable verbose printing of assembler')
     parser.add_argument('--hex', '--logisim', action='store_true', help='assemble code into hexadecimal (Logisim-compatible)')
-    parser.add_argument('-s', '--separator', required=False, type=separator, default=' ', help='the separator to use between instructions (accepts \s for space and standard escape characters) [default: \s]')
+    parser.add_argument('-s', '--separator', required=False, type=separator, default='\\n', help='the separator to use between instructions (accepts \s for space and standard escape characters) [default: \\n]')
+    parser.add_argument('--sym', '--symbols', action='store_true', help="output an additional file containing the assembled program's symbol table")
     # parser.add_argument('-o' '--opcode', nargs=1, type=int, default=4, help='the bit width of the opcodes')
     # parser.add_argument('-r' '--register', nargs=1, type=int, default=4, help='the bit width of the register identifiers')
     # parser.add_argument('-b' '--bits', nargs=1, type=int, default=32, help='the bit width of the architecture to assemble for')
@@ -154,12 +156,25 @@ if __name__ == "__main__":
             exit(1)
         
     outFileName = os.path.splitext(args.asmfile)[0]
-    outFileName += '.hex' if args.hex else '.bin'
+    code_ext = '.hex' if args.hex else '.bin'
     sep = args.separator
+
+    if args.sym:
+        sym_ext = '.sym'
+        print("Writing symbol table to {}...", end="")
+
+        sym_sorted = sorted(ISA.SYMBOL_TABLE.items(), key=operator.itemgetter(1))
+
+        with open(outFileName + sym_ext, 'w') as write_file:
+            for (symbol, addr) in sym_sorted:
+                write_file.write("{}: {}\n".format(symbol, addr))
+
+        print('done!')
+
+
+    print("Writing to {}...".format(outFileName + code_ext), end="")
         
-    print("Writing to {}...".format(outFileName), end="")
-        
-    with open(outFileName, 'w') as write_file:
+    with open(outFileName + code_ext, 'w') as write_file:
         for r in results:
             write_file.write(r + sep)
 
