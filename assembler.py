@@ -161,7 +161,7 @@ if __name__ == "__main__":
 
     if args.sym:
         sym_ext = '.sym'
-        print("Writing symbol table to {}...", end="")
+        print("Writing symbol table to {}...".format(outFileName + sym_ext), end="")
 
         sym_sorted = sorted(ISA.SYMBOL_TABLE.items(), key=operator.itemgetter(1))
 
