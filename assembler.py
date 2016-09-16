@@ -167,7 +167,7 @@ if __name__ == "__main__":
 
         with open(outFileName + sym_ext, 'w') as write_file:
             for (symbol, addr) in sym_sorted:
-                write_file.write("{}: {}\n".format(symbol, addr))
+                write_file.write("{}: {}\n".format(symbol, hex(addr)))
 
         print('done!')
 
