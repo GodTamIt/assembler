@@ -120,7 +120,7 @@ def __dec2bin__(num, bits):
     """Compute the 2's complement binary of an int value."""
     return format(num if num >= 0 else (1 << bits) + num, '0{}b'.format(bits))
 
-def __parse_value__(offset, size, pc=None):
+def __parse_value__(offset, size, pc=None, unsigned=False):
     bin_offset = None
     
     if type(offset) is str:
@@ -155,11 +155,19 @@ def __parse_value__(offset, size, pc=None):
                 raise RuntimeError("'{}' cannot be resolved as a label or a value.".format(offset))
             else:
                 raise RuntimeError("'{}' cannot be resolved as a value.".format(offset))
-            
-        bound = 2**(size - 1)
-        if offset < -bound or offset >= bound:
-            raise RuntimeError("'{}' is too large (values) or too far away (labels) for {}.".format(offset, __name__))
         
+        if unsigned:
+            bound = (2**size)
+
+            # >= bound because range is [0, 2^n - 1]
+            if offset >= bound:
+                raise RuntimeError("'{}' is too large (values) or too far away (labels) for {}.".format(offset, __name__))
+        else:
+            bound = 2**(size - 1)
+
+            if offset < -bound or offset >= bound:
+                raise RuntimeError("'{}' is too large (values) or too far away (labels) for {}.".format(offset, __name__))
+            
         bin_offset = __dec2bin__(offset, size)
     
     return bin_offset
@@ -264,7 +272,7 @@ def __parse_shf__(operands, A, D):
     result_list.append(D)
     result_list.append('0' * __SHF_UNUSED_SIZE__)
 
-    result_list.append(__parse_value__(match.group('Offset'), __SHF_IMM_SIZE__))
+    result_list.append(__parse_value__(match.group('Offset'), __SHF_IMM_SIZE__, unsigned=True))
 
     return ''.join(result_list)
 
