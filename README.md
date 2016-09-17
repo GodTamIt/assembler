@@ -14,7 +14,7 @@ The assembler contains multiple options.
 `python assembler.py -h` prints:
 ```
 usage: Assembles generic ISA-defined assembly code into hex or binary.
-       [-h] [-i ISA] [-v] [--hex] [-s SEPARATOR] asmfile
+       [-h] [-i ISA] [-v] [--hex] [-s SEPARATOR] [--sym] asmfile
 
 positional arguments:
   asmfile               the .s file to be assembled
@@ -27,7 +27,9 @@ optional arguments:
   -s SEPARATOR, --separator SEPARATOR
                         the separator to use between instructions (accepts \s
                         for space and standard escape characters) [default:
-                        \s]
+                        \n]
+  --sym, --symbols      output an additional file containing the assembled
+                        program's symbol table
 
 ```
 
@@ -47,7 +49,7 @@ To output assembled code in hexadecimal (compatible with *Logisim* images):
 python assembler.py assembly.s -i lc2200 --logisim
 ```
 
-To separate entries by new line:
+To separate entries by a space:
 ```
-python assembler.py assembly.s -i lc2200 --separator \n
+python assembler.py assembly.s -i lc2200 --separator \s
 ```
