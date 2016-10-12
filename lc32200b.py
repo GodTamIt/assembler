@@ -381,9 +381,9 @@ class beq(Instruction):
         assert('pc' in kwargs)  # Sanity check
     
         opcode = __zero_extend__(bin(beq.opcode()), OPCODE_WIDTH)
-        operands = __parse_i__(operands, kwargs['pc'])
+        operands = __parse_i__(operands, pc=kwargs['pc'])
 
-        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True), noop.binary()]
+        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)] + noop.binary(operands)
         
     @staticmethod
     def hex(operands, **kwargs):
@@ -403,7 +403,7 @@ class jalr(Instruction):
     def binary(operands, **kwargs):
         opcode = __zero_extend__(bin(jalr.opcode()), OPCODE_WIDTH)
         operands = __parse_jalr__(operands)
-        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True), noop.binary()]
+        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)] + noop.binary(operands)
         
     @staticmethod
     def hex(operands, **kwargs):
@@ -519,9 +519,9 @@ class bne(Instruction):
         assert('pc' in kwargs)  # Sanity check
     
         opcode = __zero_extend__(bin(bne.opcode()), OPCODE_WIDTH)
-        operands = __parse_i__(operands, kwargs['pc'])
+        operands = __parse_i__(operands, pc=kwargs['pc'])
 
-        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True), noop.binary()]
+        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)] + noop.binary(operands)
         
     @staticmethod
     def hex(operands, **kwargs):
