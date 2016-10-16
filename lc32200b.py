@@ -45,8 +45,29 @@ REGISTERS = {
 
 SYMBOL_TABLE = {}
 
+VALID_PARAMS = {
+        'delay_slots'   :   int}
+
+PARAMS = {
+        'delay_slots'   :   1}
 
 # Public Functions
+def receive_params(value_table):
+    if not value_table:
+        return
+
+    for key in value_table:
+        key = key.lower()
+        if key not in VALID_PARAMS:
+            raise RuntimeError('{} is not a valid custom parameter.')
+        
+        if VALID_PARAMS[key]:
+            try:
+                PARAMS[key] = VALID_PARAMS[key](value_table[key])
+            except:
+                raise RuntimeError('{} parameter is not of the valid {}.'.format(key, VALID_PARAMS[key]))
+
+
 def is_blank(line):
     """Return whether a line is blank and not an instruction."""
     return __RE_BLANK__.match(line) is not None
@@ -269,6 +290,8 @@ def __parse_shf__(operands, A, D):
 
     return ''.join(result_list)
 
+def __generate_delay_slots__(operands):
+    return noop.binary(operands)*int(PARAMS['delay_slots'])
 
 class Instruction:
     """
@@ -383,7 +406,7 @@ class beq(Instruction):
         opcode = __zero_extend__(bin(beq.opcode()), OPCODE_WIDTH)
         operands = __parse_i__(operands, pc=kwargs['pc'])
 
-        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)] + noop.binary(operands)
+        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)] + __generate_delay_slots__(operands)
         
     @staticmethod
     def hex(operands, **kwargs):
@@ -403,7 +426,7 @@ class jalr(Instruction):
     def binary(operands, **kwargs):
         opcode = __zero_extend__(bin(jalr.opcode()), OPCODE_WIDTH)
         operands = __parse_jalr__(operands)
-        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)] + noop.binary(operands)
+        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)] + __generate_delay_slots__(operands)
         
     @staticmethod
     def hex(operands, **kwargs):
@@ -521,7 +544,7 @@ class bne(Instruction):
         opcode = __zero_extend__(bin(bne.opcode()), OPCODE_WIDTH)
         operands = __parse_i__(operands, pc=kwargs['pc'])
 
-        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)] + noop.binary(operands)
+        return [__zero_extend__(opcode + operands, BIT_WIDTH, pad_right=True)] + __generate_delay_slots__(operands)
         
     @staticmethod
     def hex(operands, **kwargs):

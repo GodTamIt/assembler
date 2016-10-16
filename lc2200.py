@@ -42,6 +42,10 @@ SYMBOL_TABLE = {}
 
 
 # Public Functions
+def receive_params(value_table):
+    if value_table:
+        raise RuntimeError('Custom parameters are not supported')
+
 def is_blank(line):
     """Return whether a line is blank and not an instruction."""
     return __RE_BLANK__.match(line) is not None

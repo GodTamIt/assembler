@@ -3,6 +3,7 @@ import argparse
 import os
 import importlib
 import operator
+import re
 
 """assembler.py: General, modular 2-pass assembler accepting ISA definitions to assemble code."""
 __author__ = "Christopher Tam"
@@ -11,6 +12,7 @@ __author__ = "Christopher Tam"
 VERBOSE = False
 FILE_NAME = ''
 ISA = None
+RE_PARAMS = re.compile('^(?P<key>.+)=(?P<value>.+)$')
 
 def verbose(s):
     if VERBOSE:
@@ -119,6 +121,23 @@ def pass2(input_file, use_hex):
 def separator(s):
     return s.replace('\s', ' ').encode().decode('unicode_escape')
 
+def parse_params(values):
+    if values is None:
+        return None
+    
+    parsed = {}
+    values = values.split(',')
+    
+    for val in values:
+        m = RE_PARAMS.match(val)
+        if m is None:
+            print("Error: '{}' is not a valid custom parameter".format(val))
+            exit(1)
+
+        parsed[m.group('key')] = m.group('value')
+
+    return parsed
+
 if __name__ == "__main__":
     # Parse arguments
     parser = argparse.ArgumentParser('Assembles generic ISA-defined assembly code into hex or binary.')
@@ -128,19 +147,25 @@ if __name__ == "__main__":
     parser.add_argument('--hex', '--logisim', action='store_true', help='assemble code into hexadecimal (Logisim-compatible)')
     parser.add_argument('-s', '--separator', required=False, type=separator, default='\\n', help='the separator to use between instructions (accepts \s for space and standard escape characters) [default: \\n]')
     parser.add_argument('--sym', '--symbols', action='store_true', help="output an additional file containing the assembled program's symbol table")
-    # parser.add_argument('-o' '--opcode', nargs=1, type=int, default=4, help='the bit width of the opcodes')
-    # parser.add_argument('-r' '--register', nargs=1, type=int, default=4, help='the bit width of the register identifiers')
-    # parser.add_argument('-b' '--bits', nargs=1, type=int, default=32, help='the bit width of the architecture to assemble for')
+    parser.add_argument('--params', required=False, type=str, help='custom parameters to pass to an architecture, formatted as "key1=value1, key2=value2, key3=value3"')
     args = parser.parse_args()
     
+
     # Try to dynamically load ISA module
     try:
         ISA = importlib.import_module(args.isa)
     except Exception as e:
-        print("Error: Failed to load ISA definition module '{}'. {}.\n".format(args.isa, str(e)))
+        print("Error: Failed to load ISA definition module '{}'. {}\n".format(args.isa, str(e)))
         exit(1)
         
     print("Assembling for {} architecture...".format(ISA.__name__))
+
+    # Pass in custom parameters
+    try:
+        ISA.receive_params(parse_params(args.params))
+    except Exception as e:
+        print("Error: Failed to parse custom parameters for {}. {}\n".format(ISA.__name__, str(e)))
+        exit(1)
 
     VERBOSE = args.verbose
     FILE_NAME = os.path.basename(args.asmfile)
