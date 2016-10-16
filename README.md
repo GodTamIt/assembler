@@ -14,7 +14,8 @@ The assembler contains multiple options.
 `python assembler.py -h` prints:
 ```
 usage: Assembles generic ISA-defined assembly code into hex or binary.
-       [-h] [-i ISA] [-v] [--hex] [-s SEPARATOR] [--sym] asmfile
+       [-h] [-i ISA] [-v] [--hex] [-s SEPARATOR] [--sym] [--params PARAMS]
+       asmfile
 
 positional arguments:
   asmfile               the .s file to be assembled
@@ -30,6 +31,8 @@ optional arguments:
                         \n]
   --sym, --symbols      output an additional file containing the assembled
                         program's symbol table
+  --params PARAMS       custom parameters to pass to an architecture,
+                        formatted as "key1=value1, key2=value2, key3=value3"
 
 ```
 
