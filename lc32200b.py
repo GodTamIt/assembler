@@ -291,7 +291,7 @@ def __parse_shf__(operands, A, D):
     return ''.join(result_list)
 
 def __generate_delay_slots__(operands):
-    return noop.binary(operands)*int(PARAMS['delay_slots'])
+    return noop.binary(operands)*PARAMS['delay_slots']
 
 class Instruction:
     """
@@ -397,7 +397,7 @@ class beq(Instruction):
         
     @staticmethod
     def size():
-        return 2
+        return PARAMS['delay_slots'] + 1
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -420,7 +420,7 @@ class jalr(Instruction):
         
     @staticmethod
     def size():
-        return 2
+        return PARAMS['delay_slots'] + 1
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -535,7 +535,7 @@ class bne(Instruction):
         
     @staticmethod
     def size():
-        return 2
+        return PARAMS['delay_slots'] + 1
         
     @staticmethod
     def binary(operands, **kwargs):
