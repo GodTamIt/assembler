@@ -140,7 +140,7 @@ def parse_params(values):
 
 if __name__ == "__main__":
     # Parse arguments
-    parser = argparse.ArgumentParser('Assembles generic ISA-defined assembly code into hex or binary.')
+    parser = argparse.ArgumentParser('assembler.py', description='Assembles generic ISA-defined assembly code into hex or binary.')
     parser.add_argument('asmfile', help='the .s file to be assembled')
     parser.add_argument('-i', '--isa', required=False, type=str, default='isa', help='define the Python ISA module to load [default: isa]')
     parser.add_argument('-v', '--verbose', action='store_true', help='enable verbose printing of assembler')
