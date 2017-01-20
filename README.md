@@ -39,20 +39,20 @@ optional arguments:
 ## How to Use
 Typical usage:
 ```
-python assembler.py <assembly_file> -i <isa_definition>
+./assembler.py <assembly_file> -i <isa_definition>
 ```
 
 Example usage with the `lc2200.py` definition:
 ```
-python assembler.py assembly.s -i lc2200
+./assembler.py assembly.s -i lc2200
 ```
 
 To output assembled code in hexadecimal (compatible with *Logisim* images):
 ```
-python assembler.py assembly.s -i lc2200 --logisim
+./assembler.py assembly.s -i lc2200 --logisim
 ```
 
 To separate entries by a space:
 ```
-python assembler.py assembly.s -i lc2200 --separator \s
+./assembler.py assembly.s -i lc2200 --separator \s
 ```
