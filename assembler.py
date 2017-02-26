@@ -39,17 +39,24 @@ def pass1(file):
             verbose(line)
             continue
         
+        # Check if PC is valid
+        try:
+            pc = ISA.validate_pc(pc)
+        except Exception as e:
+            error(line_count, str(e))
+            break
+
+
         # Trim any leading and trailing whitespace
         line = line.strip()
         
         verbose('{}: {}'.format(pc, line))
         
-        
         # Make line case-insensitive
         line = line.lower()
         
         # Parse line
-        label, op, _ = ISA.get_parts(line)
+        label, op, operands = ISA.get_parts(line)
         if label:
             if label in ISA.SYMBOL_TABLE:
                 error(line_count, "label '{}' is defined more than once".format(label))
@@ -58,12 +65,20 @@ def pass1(file):
                 ISA.SYMBOL_TABLE[label] = pc
                 
         if op:
+            instr = None
             try:
-                pc += getattr(ISA, ISA.instruction_class(op)).size()
+                instr = getattr(ISA, ISA.instruction_class(op))
             except:
                 error(line_count, "instruction '{}' is not defined in the current ISA".format(op))
                 no_errors = False
+
+            try:
+                pc = instr.pc(pc=pc, instruction=op, operands=operands)
+            except Exception as e:
+                error(line_count, str(e))
+                no_errors = False
                 
+
         line_count += 1
         
     verbose("\nFinished Pass 1.\n")
@@ -77,7 +92,7 @@ def pass2(input_file, use_hex):
     pc = 0
     line_count = 1
     success = True
-    results = []
+    results = {}
     
     # Seek to beginning of file
     input_file.seek(0)
@@ -112,8 +127,16 @@ def pass2(input_file, use_hex):
                 success = False
             
             if assembled:
-                results.extend(assembled)
-                pc += instr.size()
+                for i in range(len(assembled)):
+                    cur_pc = pc + i
+                    if cur_pc in results:
+                        error(line_count, "PC address {} is defined more than once".format(cur_pc))
+                        success = False
+                        break
+
+                    results[cur_pc] = assembled[i]
+
+                pc = instr.pc(pc=pc, instruction=op, operands=operands)
             
         line_count += 1
     
@@ -202,7 +225,8 @@ if __name__ == "__main__":
     print("Writing to {}...".format(outFileName + code_ext), end="")
         
     with open(outFileName + code_ext, 'w') as write_file:
-        for r in results:
+        out_generator = ISA.output_generator(results, 'hex' if args.hex else 'binary')
+        for r in out_generator:
             write_file.write(r + sep)
 
     print('done!')

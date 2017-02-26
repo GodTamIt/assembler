@@ -41,27 +41,6 @@ REGISTERS = {
 SYMBOL_TABLE = {}
 
 
-# Public Functions
-def receive_params(value_table):
-    if value_table:
-        raise RuntimeError('Custom parameters are not supported')
-
-def is_blank(line):
-    """Return whether a line is blank and not an instruction."""
-    return __RE_BLANK__.match(line) is not None
-    
-def get_parts(line):
-    """Break down an instruction into 3 parts: Label, Opcode, Operand"""
-    m = __RE_PARTS__.match(line)
-    try:
-        return m.group('Label'), m.group('Opcode'), m.group('Operands')
-    except:
-        return None
-
-def instruction_class(name):
-    """Translate a given instruction name to its corresponding class name."""
-    return ALIASES.get(name, name)
-
 # Private Variables
 __OFFSET_SIZE__ = BIT_WIDTH - OPCODE_WIDTH - (REGISTER_WIDTH * 2)
 assert(__OFFSET_SIZE__ > 0)  # Sanity check
@@ -210,8 +189,8 @@ class Instruction:
         raise NotImplementedError()
     
     @staticmethod
-    def size():
-        """Return how many binary machine-level instructions the instruction will expand to."""
+    def pc(pc, **kwargs):
+        """Return the new PC after assembling the given instruction"""
         raise NotImplementedError()
         
     @staticmethod
@@ -243,10 +222,10 @@ class add(Instruction):
     @staticmethod
     def opcode():
         return 0
-        
+    
     @staticmethod
-    def size():
-        return 1
+    def pc(pc, **kwargs):
+        return pc + 1
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -262,10 +241,10 @@ class neg(Instruction):
     @staticmethod
     def opcode():
         return 1
-        
+
     @staticmethod
-    def size():
-        return 1
+    def pc(pc, operands):
+        return pc + 1
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -282,10 +261,10 @@ class addi(Instruction):
     @staticmethod
     def opcode():
         return 2
-        
+
     @staticmethod
-    def size():
-        return 1
+    def pc(pc, **kwargs):
+        return pc + 1
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -304,8 +283,8 @@ class lw(Instruction):
         return 3
         
     @staticmethod
-    def size():
-        return 1
+    def pc(pc, **kwargs):
+        return pc + 1
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -324,8 +303,8 @@ class sw(Instruction):
         return 4
         
     @staticmethod
-    def size():
-        return 1
+    def pc(pc, **kwargs):
+        return pc + 1
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -343,8 +322,8 @@ class beq(Instruction):
         return 5
         
     @staticmethod
-    def size():
-        return 1
+    def pc(pc, **kwargs):
+        return pc + 1
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -365,8 +344,8 @@ class jalr(Instruction):
         return 6
         
     @staticmethod
-    def size():
-        return 1
+    def pc(pc, **kwargs):
+        return pc + 1
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -385,8 +364,8 @@ class spop(Instruction):
         return 7
         
     @staticmethod
-    def size():
-        return 1
+    def pc(pc, **kwargs):
+        return pc + 1
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -413,8 +392,8 @@ class la(Instruction):
         return None
         
     @staticmethod
-    def size():
-        return 4
+    def pc(pc, **kwargs):
+        return pc + 4
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -458,8 +437,8 @@ class noop(Instruction):
         return None
         
     @staticmethod
-    def size():
-        return 1
+    def pc(pc, **kwargs):
+        return pc + 1
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -476,8 +455,8 @@ class fill(Instruction):
         return None
         
     @staticmethod
-    def size():
-        return 1
+    def pc(pc, **kwargs):
+        return pc + 1
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -496,8 +475,8 @@ class halt(Instruction):
         return None
         
     @staticmethod
-    def size():
-        return 1
+    def pc(pc, **kwargs):
+        return pc + 1
         
     @staticmethod
     def binary(operands, **kwargs):
@@ -506,3 +485,55 @@ class halt(Instruction):
     @staticmethod
     def hex(operands, **kwargs):
         return [__bin2hex__(instr) for instr in halt.binary(operands, **kwargs)]
+
+
+
+
+# Public Functions
+def receive_params(value_table):
+    if value_table:
+        raise RuntimeError('Custom parameters are not supported')
+
+def is_blank(line):
+    """Return whether a line is blank and not an instruction."""
+    return __RE_BLANK__.match(line) is not None
+    
+def get_parts(line):
+    """Break down an instruction into 3 parts: Label, Opcode, Operand"""
+    m = __RE_PARTS__.match(line)
+    try:
+        return m.group('Label'), m.group('Opcode'), m.group('Operands')
+    except:
+        return None
+
+def instruction_class(name):
+    """Translate a given instruction name to its corresponding class name."""
+    return ALIASES.get(name, name)
+
+def validate_pc(pc):
+    """Returns or modifies the PC to a permitted value, if possible. Throws an error if the PC is invalid."""
+    if pc >= 2**BIT_WIDTH:
+        raise RuntimeError("PC value {} is too large for {} bits.".format(pc, BIT_WIDTH))
+
+    return pc
+
+def output_generator(assembled_dict, output_format='binary'):
+    """Returns a generator that creates output from {pc : assembly}-formatted dictionary."""
+    pc = 0
+    count = 0
+
+    while count < len(assembled_dict):
+        if pc in assembled_dict:
+            yield assembled_dict[pc]
+            pc += 1
+            count += 1
+        else:
+            if output_format == 'hex':
+                results = noop.hex()
+            elif output_format == 'binary':
+                results = noop.binary()
+
+            for r in results:
+                yield r
+
+            pc = noop.pc(pc)
