@@ -86,7 +86,7 @@ def pass1(file):
     return no_errors
 
 
-def pass2(input_file, use_hex):
+def pass2(input_file):
     verbose("\nBeginning Pass 2...\n")
 
     pc = 0
@@ -118,12 +118,10 @@ def pass2(input_file, use_hex):
             instr = getattr(ISA, ISA.instruction_class(op))
             assembled = None
             try:
-                if use_hex:
-                    assembled = instr.hex(operands, pc=pc, instruction=op)
-                else:
-                    assembled = instr.binary(operands, pc=pc, instruction=op)
+                assembled = instr.create(operands, pc=pc, instruction=op)
             except Exception as e:
                 error(line_count, str(e))
+                raise
                 success = False
             
             if assembled:
@@ -200,7 +198,7 @@ if __name__ == "__main__":
             print("Assemble failed.\n")
             exit(1)
         
-        success, results = pass2(read_file, args.hex)
+        success, results = pass2(read_file)
         if not success:
             print("Assemble failed.\n")
             exit(1)
