@@ -83,7 +83,8 @@ def sign_extend(binary, target):
     if binary.startswith('0b'):
         binary = binary[2:]
 
-    return binary[0] * (target - len(binary)) + binary
+    sign = binary[0] if len(binary) > 1 else '0'
+    return sign * (target - len(binary)) + binary
     
 def bin2hex(binary):
     return '%0*X' % ((len(binary) + 3) // 4, int(binary, 2))
@@ -97,31 +98,31 @@ def dec2bin(num, bits):
 
 def parse_value(offset, size, pc=None, unsigned=False):
     bin_offset = None
-    
+
     if type(offset) is str:
         if pc is not None and offset in SYMBOL_TABLE:
-            offset = SYMBOL_TABLE[offset] - (pc + 1)
+            offset = SYMBOL_TABLE[offset] - pc - 1
         elif offset.startswith('0x'):
             try:
                 bin_offset = hex2bin(offset)
             except:
                 raise RuntimeError("'{}' is not in a valid hexadecimal format.".format(offset))
-                
+
             if len(bin_offset) > size:
                 raise RuntimeError("'{}' is too large for {}.".format(offset, __name__))
-                
+
             bin_offset = zero_extend(bin_offset, size)
         elif offset.startswith('0b'):
             try:
                 bin_offset = bin(int(offset))
             except:
                 raise RuntimeError("'{}' is not in a valid binary format.".format(offset))
-                
+
             if len(bin_offset) > size:
                 raise RuntimeError("'{}' is too large for {}.".format(offset, __name__))
-                
+
             bin_offset = zero_extend(bin_offset, size)
-            
+
     if bin_offset is None:
         try:
             offset = int(offset)
@@ -130,21 +131,25 @@ def parse_value(offset, size, pc=None, unsigned=False):
                 raise RuntimeError("'{}' cannot be resolved as a label or a value.".format(offset))
             else:
                 raise RuntimeError("'{}' cannot be resolved as a value.".format(offset))
-        
+
         if unsigned:
             bound = (2**size)
 
             # >= bound because range is [0, 2^n - 1]
-            if offset >= bound:
-                raise RuntimeError("'{}' is too large (values) or too far away (labels) for {}.".format(offset, __name__))
+            if offset < 0:
+                raise RuntimeError("'{}' cannot be a negative value for {}.".format(offset, __name__))
+            elif offset >= bound:
+                raise RuntimeError("'{}' is too large (as a value) or too far away (as a label) for {}.".format(offset, __name__))
         else:
             bound = 2**(size - 1)
 
-            if offset < -bound or offset >= bound:
-                raise RuntimeError("'{}' is too large (values) or too far away (labels) for {}.".format(offset, __name__))
-            
+            if offset < -bound:
+                raise RuntimeError("'{}' is too small (as a value) or too far away (as a label) for {}.".format(offset, __name__))
+            elif offset >= bound:
+                raise RuntimeError("'{}' is too large (as a value) or too far away (as a label) for {}.".format(offset, __name__))
+
         bin_offset = dec2bin(offset, size)
-    
+
     return bin_offset
 
 
